@@ -3,7 +3,7 @@
 	<metadata>
 		<id>NuGet.Restore</id>
 		<version>1.0</version>
-		<title>NuGet.Restore: Ultimate Cross Platform NuGet Restore</title>
+		<title>NuGet Restore Ultimate Cross Platform</title>
 		<authors>Daniel Cazzulino, kzu</authors>
 		<iconUrl>https://raw.github.com/kzu/NuGet.Restore/master/img/icon.png</iconUrl>
 		<licenseUrl>https://github.com/kzu/NuGet.Restore/blob/master/LICENSE</licenseUrl>
