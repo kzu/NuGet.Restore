@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	The MIT License (MIT)
+
+	Copyright (c) 2015 Daniel Cazzulino
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="tools\NuGet.Restore.targets" />
+  <PropertyGroup>
+    <PackagesPath Condition=" '$(PackagesPath)' == '' ">$(NuGetPath)\packages</PackagesPath>
+    <IntermediateOutputPath>$(NuGetPath)\</IntermediateOutputPath>
+    <GitInfoReportImportance>high</GitInfoReportImportance>
+  </PropertyGroup>
+  
+  <!-- Optional auto-versioning augmentation of NuSpec... -->
+  <Target Name="GitInfoReport" /><!-- Potentially overriden by the import below... -->
+  <Import Project="$(PackagesPath)\GitInfo\build\GitInfo.targets" Condition="Exists('$(PackagesPath)\GitInfo\build\GitInfo.targets')"/>
+
+  <!--
+    ============================================================
+              Automatic build-time restore and build restart
+	
+    You can safely ignore the entire file from this point down.
+    it performs automatic nuget restore for a packages.config 
+    alongside this build script, and restarts the build if 
+    packages were missing, since the build could depend on 
+    them (via conditioned project Import and tasks).
+	============================================================
+  -->
+  <PropertyGroup>
+    <IsBuildRestarted>false</IsBuildRestarted>
+    <_CheckPrerequisitesDependsOn Condition=" Exists('packages.config') And '$(IsBuildRestarted)' != 'true' ">
+      _GetNuGet;
+      _GetMissingPackages;
+      _RestartBuild
+    </_CheckPrerequisitesDependsOn>
+    <_RestartBuildDependsOn />
+  </PropertyGroup>
+
+  <Target Name="_CheckPrerequisites" DependsOnTargets="$(_CheckPrerequisitesDependsOn)" />
+
+  <Target Name="_GetMissingPackages" Condition=" Exists('packages.config') ">
+    <XmlPeek XmlInputPath="packages.config" Query="/packages/package/@id">
+      <Output TaskParameter="Result" ItemName="PackageId" />
+    </XmlPeek>
+
+    <ItemGroup>
+      <MissingPackage Include="@(PackageId)" Condition=" !Exists('$(PackagesPath)\%(PackageId.Identity)') " />
+    </ItemGroup>
+
+    <Message Importance="normal" Text="All build-time packages are already installed."
+             Condition=" '@(MissingPackage)' != '' " />
+
+    <Message Importance="high" Text="Build-time packages were missing: @(MissingPackage)."
+             Condition=" '@(MissingPackage)' != '' " />
+
+    <MakeDir Directories="$(PackagesPath)" Condition=" !Exists($(PackagesPath)) And  '@(MissingPackage)' != '' " />
+    <Exec Command="&quot;$(NuGet)&quot; Install packages.config -OutputDirectory $(PackagesPath) -ExcludeVersion"
+          Condition=" Exists('packages.config') And  '@(MissingPackage)' != '' " />
+
+    <PropertyGroup Condition=" '@(MissingPackage)' != '' ">
+      <_RestartBuildDependsOn>_CoreRestartBuild</_RestartBuildDependsOn>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_RestartBuild" DependsOnTargets="$(_RestartBuildDependsOn)" />
+
+  <Target Name="_CoreRestartBuild">
+    <PropertyGroup>
+      <!-- Clear BuildDependsOn so that CoreBuild isn't run in the currently executing build -->
+      <BuildDependsOn />
+      <IsBuildRestarted>true</IsBuildRestarted>
+    </PropertyGroup>
+
+    <Introspect>
+      <Output TaskParameter="Targets" ItemName="CurrentTargets" />
+    </Introspect>
+
+    <ItemGroup>
+      <RestartTarget Include="@(CurrentTargets)" Exclude="_RestartBuild;_CoreRestartBuild" />
+    </ItemGroup>
+
+    <Message Importance="high" Text="Rebuilding targets: @(RestartTarget)"  Condition=" '@(RestartTarget)' != '' " />
+
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="@(RestartTarget)" Properties="IsBuildRestarted=$(IsBuildRestarted)"
+             Condition=" '@(RestartTarget)' != '' " UseResultsCache="false" />
+  </Target>
+
+  <!--
+    ============================================================
+              Introspect Task
+	
+    Introspects the current project properties and targets being built.
+
+    Properties:
+    - Properties: Microsoft.Build.Framework.ITaskItem (Output)
+        Returns all current project properties as an item, with
+        each property as an item metadata with its evaluated value.
+
+    - Targets: Microsoft.Build.Framework.ITaskItem[] (Output)
+        Returns all current project targets being built as an item list.
+
+	============================================================
+  -->
+  <UsingTask TaskName="Introspect" TaskFactory="CodeTaskFactory" AssemblyFile="$(CodeTaskAssembly)">
+    <ParameterGroup>
+      <Properties ParameterType="Microsoft.Build.Framework.ITaskItem" Output="true" />
+      <Targets ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="Microsoft.Build" />
+      <Reference Include="Microsoft.CSharp" />
+      <Reference Include="System" />
+      <Reference Include="System.Core" />
+      <Using Namespace="Microsoft.Build.Execution" />
+      <Using Namespace="Microsoft.Build.Framework" />
+      <Using Namespace="Microsoft.Build.Utilities" />
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Reflection" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+			ProjectInstance project;
+			IEnumerable<object> targets;
+
+			var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+			var engineType = BuildEngine.GetType();
+			var callbackField = engineType.GetField("targetBuilderCallback", flags);
+
+			if (callbackField != null)
+			{
+				// .NET field naming convention.
+				var callback = callbackField.GetValue(BuildEngine);
+				var projectField = callback.GetType().GetField("projectInstance", flags);
+				project = (ProjectInstance)projectField.GetValue(callback);
+				var targetsField = callback.GetType().GetField("targetsToBuild", flags);
+				targets = (IEnumerable<object>)targetsField.GetValue(callback);
+			}
+			else
+			{
+				callbackField = engineType.GetField("_targetBuilderCallback", flags);
+				if (callbackField == null)
+					throw new NotSupportedException("Failed to introspect current MSBuild Engine.");
+
+				// OSS field naming convention.
+				var callback = callbackField.GetValue(BuildEngine);
+				var projectField = callback.GetType().GetField("_projectInstance", flags);
+				project = (ProjectInstance)projectField.GetValue(callback);
+				var targetsField = callback.GetType().GetField("_targetsToBuild", flags);
+				targets = (IEnumerable<object>)targetsField.GetValue(callback);
+			}
+
+			Properties = new TaskItem(project.ProjectFileLocation.File, project.Properties.ToDictionary(
+				prop => prop.Name, prop => prop.EvaluatedValue));
+
+			if (targets.Any())
+			{
+				var entryType = targets.First().GetType();
+				var nameField = entryType.GetProperty("Name", flags);
+				Targets = targets
+					.Select(entry => (string)nameField.GetValue(entry))
+					.Where(target => !project.InitialTargets.Contains(target))
+					.Select(target => new TaskItem(target))
+					.ToArray();
+			}
+			else
+			{
+				Targets = new ITaskItem[0];
+			}
+      ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+  <PropertyGroup>
+    <CodeTaskAssembly Condition="'$(CodeTaskAssembly)' == '' And '$(MSBuildAssemblyVersion)' == '' And Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')">$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll</CodeTaskAssembly>
+    <CodeTaskAssembly Condition="'$(CodeTaskAssembly)' == '' And '$(MSBuildAssemblyVersion)' == '' And Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v12.0.dll')">$(MSBuildBinPath)\Microsoft.Build.Tasks.v12.0.dll</CodeTaskAssembly>
+    <CodeTaskAssembly Condition="'$(CodeTaskAssembly)' == '' And '$(MSBuildAssemblyVersion)' == '12.0'">$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll</CodeTaskAssembly>
+    <CodeTaskAssembly Condition="'$(CodeTaskAssembly)' == '' And '$(MSBuildAssemblyVersion)' != '' and '$(MSBuildAssemblyVersion)' &gt;= '14.0'">$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll</CodeTaskAssembly>
+  </PropertyGroup>
+</Project>

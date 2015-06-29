@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <!--
+  ===========================================================
+          Provided by NuGet.Restore NuGet Package
+          
+  Automatically performs nuget package restore for solution 
+  files when building from command line (MSBuild or XBuild)
+  ===========================================================
+  -->
+  
+  <PropertyGroup>
+    <NuGetPath Condition=" '$(NuGetPath)' == '' ">$(MSBuildThisFileDirectory).nuget</NuGetPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <NuGet Condition=" '$(NuGet)' == '' ">$(NuGetPath)\NuGet.exe</NuGet>
+    <CachedNuGet Condition=" '$(CachedNuGet)' == '' ">$(LocalAppData)\NuGet\NuGet.exe</CachedNuGet>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+    <NuGet>nuget</NuGet>
+  </PropertyGroup>
+
+  <Target Name="RestorePackages" BeforeTargets="Build" DependsOnTargets="_GetNuGet">
+    <Error Text="This targets file should ONLY be imported from a file named Before.$(SolutionFileName).targets alongside the solution file."
+           Condition="!$(MSBuildProjectFile.Contains('$(SolutionFileName)'))" />
+
+    <!-- Restores current solution being build first -->
+    <Exec Command='"$(NuGet)" Restore "$(SolutionPath)"' Condition="'$(SolutionPath)' != ''" />
+    <!-- Restores optional additional solutions -->
+    <Exec Command='"$(NuGet)" Restore "%(RestoreSolution.Identity)"' Condition="'%(RestoreSolution.Identity)' != '' And '%(RestoreSolution.OutputDirectory)' == ''" />
+    <Exec Command='"$(NuGet)" Restore "%(RestoreSolution.Identity)" -OutputDirectory "%(RestoreSolution.OutputDirectory)"' Condition="'%(RestoreSolution.Identity)' != '' And '%(RestoreSolution.OutputDirectory)' != ''" />
+  </Target>
+
+  <Target Name="_GetNuGet" Condition=" '$(OS)' == 'Windows_NT' And !Exists('$(NuGet)') ">
+    <PropertyGroup>
+      <PowerShell Condition=" '$(PowerShell)' == '' ">%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShell>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(NuGetPath)" Condition=" !Exists($(NuGetPath)) " />
+    <Exec Command="&quot;$(PowerShell)&quot; -Command &quot;&amp; { (New-Object System.Net.WebClient).DownloadFile('http://nuget.org/nuget.exe', '$(CachedNuGet)') }&quot;"
+          Condition=" !Exists($(NuGet)) And !Exists($(CachedNuGet)) " />
+    <Copy SourceFiles="$(CachedNuGet)" DestinationFolder="$(NuGetPath)" Condition="!Exists($(NuGet))" />
+  </Target>
+
+</Project>

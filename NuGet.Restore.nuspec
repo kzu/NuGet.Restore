@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<package>
+	<metadata>
+		<id>NuGet.Restore</id>
+		<version>1.0</version>
+		<title>NuGet.Restore: Ultimate Cross Platform NuGet Restore</title>
+		<authors>Daniel Cazzulino, kzu</authors>
+		<iconUrl>https://raw.github.com/kzu/NuGet.Restore/master/img/icon.png</iconUrl>
+		<licenseUrl>https://github.com/kzu/NuGet.Restore/blob/master/LICENSE</licenseUrl>
+		<projectUrl>https://github.com/kzu/NuGet.Restore</projectUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<summary>
+			Provides the best-practice, NuGet-team blessed, most reliable and performant way of performing
+			automatic NuGet package restore across MSBuild and XBuild, without causing unnecessary extra
+			restores from Visual Studio and Xamarin Studio, which handle the restore already by themselves.
+		</summary>
+		<description>
+			Provides the best-practice, NuGet-team blessed, most reliable and performant way of performing
+			automatic NuGet package restore across MSBuild and XBuild, without causing unnecessary extra
+			restores from Visual Studio and Xamarin Studio, which handle the restore already by themselves.
+
+			The existing and obsolete import of NuGet.targets is explicitly advised against by the NuGet team.
+			This new approach leverages the built-in support in MSBuild for solution-level MSBuild imports
+			so that restoring packages is done only ONCE for an entire solution, and it's NOT used when doing
+			IDE builds.
+		</description>
+		<copyright>Copyright 2015</copyright>
+		<tags>msbuild nuget</tags>
+	</metadata>
+	<files>
+		<!-- At least a content file needs to be provided in order 
+         for the install.ps1 script to run -->
+    <file src="readme.txt" target="content" />
+    <file src="readme.txt" />
+		<file src="tools\Before.Blank.sln.targets" target="tools" />
+		<file src="tools\NuGet.config" target="tools" />
+		<file src="tools\NuGet.Restore.targets" target="tools" />
+		<file src="tools\install.ps1" target="tools" />
+	</files>
+</package>
