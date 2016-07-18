@@ -1,4 +1,4 @@
-![Icon](https://raw.githubusercontent.com/kzu/NuGet.Restore/master/img/icon.png) Ultimate Cross Platform NuGet Restore
+![Icon](https://raw.githubusercontent.com/kzu/NuGet.Restore/master/icon.png) Ultimate Cross Platform NuGet Restore
 ============
 
 This project provides the best-practice, NuGet-team blessed, most reliable and performant way 
