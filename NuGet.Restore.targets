@@ -8,7 +8,7 @@
 
 		<BaseUrl Condition=" '$(BaseUrl)' == '' ">https://raw.githubusercontent.com/kzu/NuGet.Restore/master/</BaseUrl>
 		<CurlUrl Condition=" '$(CurlUrl)' == '' ">$(BaseUrl)curl.exe</CurlUrl>
-		<CurlArgs Condition=" '$(CurlArgs)' == '' ">-k -f</CurlArgs>
+		<CurlArgs Condition=" '$(CurlArgs)' == '' ">-k -f -L</CurlArgs>
 		<Curl Condition=" '$(OS)' == 'Windows_NT' ">"$(TEMP)\curl.exe" $(CurlArgs)</Curl>
 		<Curl Condition=" '$(OS)' != 'Windows_NT' ">curl $(CurlArgs)</Curl>
 		<TargetsFile>$(MSBuildThisFilename)$(MSBuildThisFileExtension)</TargetsFile>
