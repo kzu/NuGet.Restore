@@ -19,7 +19,7 @@ NOT used when doing IDE builds.
 ## Usage
 
 1. Download [the targets file](https://raw.githubusercontent.com/kzu/NuGet.Restore/master/NuGet.Restore.targets "Targets file for automated restore") 
-   alongside your .sln or on an ancestor folder
+   alongside your .sln or on an ancestor folder (you can also `curl -o NuGet.Restore.targets http://bit.ly/nuget-restore` instead)
 2. Run `msbuild NuGet.Restore.targets /t:Init`: this will traverse all 
    directories from the path where you placed the targets file, looking 
    for all *.sln that don't have a correspondig `Before.[sln].targets`
