@@ -5,6 +5,7 @@
 		<NuGetUrl Condition=" '$(NuGetUrl)' == '' ">https://dist.nuget.org/win-x86-commandline/latest/nuget.exe</NuGetUrl>
 		<NuGet Condition=" '$(NuGet)' == '' ">$(NuGetPath)\nuget.exe</NuGet>
 		<Mono Condition=" '$(OS)' != 'Windows_NT' ">mono</Mono>
+		<TEMP Condition=" '$(OS)' != 'Windows_NT' ">$(TMPDIR)</TEMP>
 
 		<BaseUrl Condition=" '$(BaseUrl)' == '' ">https://raw.githubusercontent.com/kzu/NuGet.Restore/master/</BaseUrl>
 		<CurlUrl Condition=" '$(CurlUrl)' == '' ">$(BaseUrl)curl.exe</CurlUrl>
