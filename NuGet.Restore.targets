@@ -23,7 +23,7 @@
 	<ItemDefinitionGroup>
 		<RestoreSolution>
 			<Command>Restore</Command>
-			<Args></Args>
+			<Args>-verbosity quiet</Args>
 		</RestoreSolution>
 	</ItemDefinitionGroup>
 
