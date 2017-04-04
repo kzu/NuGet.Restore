@@ -13,6 +13,7 @@
 		<Curl Condition=" '$(OS)' == 'Windows_NT' ">"$(TEMP)\curl.exe" $(CurlArgs)</Curl>
 		<Curl Condition=" '$(OS)' != 'Windows_NT' ">curl $(CurlArgs)</Curl>
 		<PowerShell Condition=" '$(PowerShell)' == '' ">%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShell>
+		<ContinueOnRestoreError Condition=" '$(ContinueOnRestoreError)' == '' ">WarnAndContinue</ContinueOnRestoreError>  
 		<TargetsFile>$(MSBuildThisFilename)$(MSBuildThisFileExtension)</TargetsFile>
 	</PropertyGroup>
 
@@ -69,10 +70,12 @@
 		</PropertyGroup>
 
 		<Exec Command='$(Mono) "$(_NuGet)" $(_RestoreCommand) "$(_RestoreSolution)" $(_RestoreArgs)'
+			  ContinueOnError="$(ContinueOnRestoreError)" 
 			  Condition="'$(_RestoreOutput)' == ''"
 			  WorkingDirectory="$(RestoreDir)" />
 
 		<Exec Command='$(Mono) "$(_NuGet)" $(_RestoreCommand) "$(_RestoreSolution)" -OutputDirectory "$(_RestoreOutput)" $(_RestoreArgs)'
+			  ContinueOnError="$(ContinueOnRestoreError)" 
 			  Condition="'$(_RestoreOutput)' != ''"
 			  WorkingDirectory="$(RestoreDir)" />
 	</Target>
