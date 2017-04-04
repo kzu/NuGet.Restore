@@ -12,6 +12,7 @@
 		<CurlArgs Condition=" '$(CurlArgs)' == '' ">-k -f -L</CurlArgs>
 		<Curl Condition=" '$(OS)' == 'Windows_NT' ">"$(TEMP)\curl.exe" $(CurlArgs)</Curl>
 		<Curl Condition=" '$(OS)' != 'Windows_NT' ">curl $(CurlArgs)</Curl>
+		<PowerShell Condition=" '$(PowerShell)' == '' ">%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShell>
 		<TargetsFile>$(MSBuildThisFilename)$(MSBuildThisFileExtension)</TargetsFile>
 	</PropertyGroup>
 
@@ -136,16 +137,15 @@
 				 Condition=" '$(CurrentETag)' != '$(ETag)' " />		
 	</Target>
 
-	<Target Name="DownloadNuGet" DependsOnTargets="DownloadCurl" Condition=" !Exists('$(NuGet)') ">
+	<Target Name="DownloadNuGet" Condition="!Exists('$(NuGet)')">
 		<MakeDir Directories="$(NuGetPath)" Condition=" !Exists('$(NuGetPath)') " />
-		<Exec Command='$(Curl) -o "$(NuGet)" "$(NuGetUrl)"' />
+		<Exec Condition="'$(OS)' == 'Windows_NT'"
+			  Command="&quot;$(PowerShell)&quot; -NoProfile -Command &quot;&amp; { (New-Object System.Net.WebClient).DownloadFile('$(NuGetUrl)', '$(NuGet)') }&quot;" />
+		<Exec Condition="'$(OS)' != 'Windows_NT'"
+			  Command='$(Curl) -o "$(NuGet)" "$(NuGetUrl)"' />
 	</Target>
 
 	<Target Name="DownloadCurl" Condition=" '$(OS)' == 'Windows_NT' And !Exists('$(TEMP)\curl.exe') ">
-		<PropertyGroup>
-			<PowerShell Condition=" '$(PowerShell)' == '' ">%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShell>
-		</PropertyGroup>
-
 		<Exec Command="&quot;$(PowerShell)&quot; -NoProfile -Command &quot;&amp; { (New-Object System.Net.WebClient).DownloadFile('$(CurlUrl)', '$(TEMP)\curl.exe') }&quot;" />
 	</Target>
 
