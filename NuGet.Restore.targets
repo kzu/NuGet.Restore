@@ -14,6 +14,8 @@
 		<Curl Condition=" '$(OS)' != 'Windows_NT' ">curl $(CurlArgs)</Curl>
 		<PowerShell Condition=" '$(PowerShell)' == '' ">%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShell>
 		<ContinueOnRestoreError Condition=" '$(ContinueOnRestoreError)' == '' ">ErrorAndContinue</ContinueOnRestoreError>  
+		<RestoreVerbosity Condition="'$(RestoreVerbosity)' == ''">quiet</RestoreVerbosity>
+		<RestoreLoggingVerbosity Condition="'$(RestoreLoggingVerbosity)' == ''">normal</RestoreLoggingVerbosity>
 		<TargetsFile>$(MSBuildThisFilename)$(MSBuildThisFileExtension)</TargetsFile>
 	</PropertyGroup>
 
@@ -25,7 +27,7 @@
 	<ItemDefinitionGroup>
 		<RestoreSolution>
 			<Command>Restore</Command>
-			<Args>-verbosity quiet</Args>
+			<Args>-verbosity $(RestoreVerbosity)</Args>
 		</RestoreSolution>
 	</ItemDefinitionGroup>
 
@@ -68,6 +70,8 @@
 			<!-- The default value from ItemDefinitionGroup isn't being picked up by xbuild -->
 			<_RestoreCommand Condition=" '$(_RestoreCommand)' == '' ">Restore</_RestoreCommand>
 		</PropertyGroup>
+
+		<Message Importance="$(RestoreLoggingImportance)" Text="Restoring $(_RestoreSolution)..." />
 
 		<Exec Command='$(Mono) "$(_NuGet)" $(_RestoreCommand) "$(_RestoreSolution)" $(_RestoreArgs)'
 			  ContinueOnError="$(ContinueOnRestoreError)" 
